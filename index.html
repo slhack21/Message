@@ -17,7 +17,7 @@ body{
 .container{
   background:#181b23;
   padding:20px;
-  width:460px;
+  width:470px;
   border-radius:10px;
 }
 h2{text-align:center;margin-bottom:15px}
@@ -67,7 +67,7 @@ button:hover{background:#4752c4}
 🎨 Couleur :
 <input type="color" id="color" value="#9b59b6">
 
-📎 Fichiers / Images :
+📎 Images / Vidéos / Fichiers :
 <input type="file" id="files" multiple>
 
 <div id="fileList"></div>
@@ -82,16 +82,16 @@ const fileList = document.getElementById("fileList");
 
 fileInput.addEventListener("change",()=>{
   for(const f of fileInput.files) files.push(f);
-  fileInput.value = "";
+  fileInput.value="";
   renderFiles();
 });
 
 function renderFiles(){
-  fileList.innerHTML = "";
+  fileList.innerHTML="";
   files.forEach((f,i)=>{
-    const div = document.createElement("div");
-    div.className = "file-item";
-    div.innerHTML = `
+    const div=document.createElement("div");
+    div.className="file-item";
+    div.innerHTML=`
       <span>${f.name}</span>
       <span class="remove" onclick="removeFile(${i})">❌</span>
     `;
@@ -105,41 +105,45 @@ function removeFile(i){
 }
 
 function send(){
-  const webhook = document.getElementById("webhook").value;
-  const username = document.getElementById("username").value || "Annonce";
-  const message = document.getElementById("message").value;
-  const color = parseInt(document.getElementById("color").value.replace("#",""),16);
+  const webhook=document.getElementById("webhook").value;
+  const username=document.getElementById("username").value || "Annonce";
+  const message=document.getElementById("message").value;
+  const color=parseInt(document.getElementById("color").value.replace("#",""),16);
 
   if(!webhook || !message){
     alert("Webhook et message obligatoires");
     return;
   }
 
-  const form = new FormData();
-  let embeds = [];
-  let fileIndex = 1;
+  const form=new FormData();
+  let embeds=[];
+  let index=1;
+  let firstDescriptionUsed=false;
 
   files.forEach(f=>{
-    form.append("file"+fileIndex, f);
+    form.append("file"+index,f);
 
+    // Images → embed
     if(f.type.startsWith("image")){
       embeds.push({
-        description: embeds.length === 0 ? message : null,
+        description: !firstDescriptionUsed ? message : null,
         color: color,
-        image: { url: "attachment://" + f.name }
+        image:{url:"attachment://"+f.name}
       });
+      firstDescriptionUsed=true;
     }
 
-    fileIndex++;
+    index++;
   });
 
-  if(embeds.length === 0){
-    embeds.push({ description: message, color: color });
+  // Si aucune image → embed texte seul
+  if(embeds.length===0){
+    embeds.push({description:message,color:color});
   }
 
-  form.append("payload_json", JSON.stringify({
-    username: username,
-    embeds: embeds
+  form.append("payload_json",JSON.stringify({
+    username:username,
+    embeds:embeds
   }));
 
   fetch(webhook,{method:"POST",body:form})
