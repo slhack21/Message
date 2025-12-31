@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Annonce Discord</title>
+
+<style>
+body {
+  background: #0f1117;
+  font-family: Arial, sans-serif;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  background: #181b23;
+  padding: 20px;
+  width: 420px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+input, textarea {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  background: #0f1117;
+  color: #fff;
+}
+
+textarea {
+  resize: none;
+  height: 120px;
+}
+
+input[type="color"] {
+  height: 40px;
+  padding: 3px;
+}
+
+input[type="file"] {
+  background: none;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #5865F2;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #4752c4;
+}
+
+.preview {
+  margin-top: 20px;
+  display: flex;
+  background: #2b2f36;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bar {
+  width: 6px;
+  background: #9b59b6;
+}
+
+.text {
+  padding: 12px;
+  font-size: 14px;
+  white-space: pre-line;
+}
+
+.preview img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>📢 Annonce Discord</h2>
+
+  <input id="webhook" placeholder="Webhook Discord">
+  <input id="username" placeholder="Pseudo du webhook">
+  <textarea id="message" placeholder="Message de l'annonce"></textarea>
+
+  🎨 Couleur :
+  <input type="color" id="color" value="#9b59b6">
+
+  🖼️ Image / 📁 Fichier :
+  <input type="file" id="file">
+
+  <button onclick="send()">🚀 Envoyer</button>
+
+  <div class="preview">
+    <div class="bar" id="previewBar"></div>
+    <div class="text" id="previewText">Aperçu de l'annonce</div>
+  </div>
+
+  <img id="imagePreview" style="display:none;">
+</div>
+
+<script>
+const messageInput = document.getElementById("message");
+const colorInput = document.getElementById("color");
+const previewText = document.getElementById("previewText");
+const previewBar = document.getElementById("previewBar");
+const fileInput = document.getElementById("file");
+const imagePreview = document.getElementById("imagePreview");
+
+messageInput.addEventListener("input", () => {
+  previewText.textContent = messageInput.value || "Aperçu de l'annonce";
+});
+
+colorInput.addEventListener("input", () => {
+  previewBar.style.background = colorInput.value;
+});
+
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if (file && file.type.startsWith("image")) {
+    imagePreview.src = URL.createObjectURL(file);
+    imagePreview.style.display = "block";
+  } else {
+    imagePreview.style.display = "none";
+  }
+});
+
+function send() {
+  const webhook = document.getElementById("webhook").value;
+  const username = document.getElementById("username").value || "Annonce";
+  const message = messageInput.value;
+  const color = parseInt(colorInput.value.replace("#",""), 16);
+  const file = fileInput.files[0];
+
+  if (!webhook || !message) {
+    alert("Webhook et message obligatoires");
+    return;
+  }
+
+  const formData = new FormData();
+
+  const payload = {
+    username: username,
+    embeds: [{
+      description: message,
+      color: color
+    }]
+  };
+
+  formData.append("payload_json", JSON.stringify(payload));
+
+  if (file) {
+    formData.append("file", file);
+  }
+
+  fetch(webhook, {
+    method: "POST",
+    body: formData
+  })
+  .then(() => alert("Annonce envoyée ✅"))
+  .catch(() => alert("Erreur lors de l'envoi ❌"));
+}
+</script>
+
+</body>
+</html>
