@@ -5,29 +5,23 @@
 <title>Annonce Discord Embed</title>
 
 <style>
-body {
+body{
   background:#0f1117;
-  font-family: Arial, sans-serif;
+  font-family:Arial,sans-serif;
   color:#fff;
   display:flex;
   justify-content:center;
   align-items:center;
   min-height:100vh;
 }
-
-.container {
+.container{
   background:#181b23;
   padding:20px;
-  width:430px;
+  width:450px;
   border-radius:10px;
 }
-
-h2 {
-  text-align:center;
-  margin-bottom:15px;
-}
-
-input, textarea {
+h2{text-align:center;margin-bottom:15px}
+input,textarea{
   width:100%;
   margin-bottom:10px;
   padding:10px;
@@ -36,48 +30,43 @@ input, textarea {
   background:#0f1117;
   color:#fff;
 }
-
-textarea {
-  height:110px;
-  resize:none;
-}
-
-input[type="color"] {
-  height:40px;
-}
-
-button {
+textarea{height:110px;resize:none}
+input[type="color"]{height:40px}
+button{
   width:100%;
   padding:12px;
   background:#5865F2;
   border:none;
-  color:white;
+  color:#fff;
   font-size:16px;
   border-radius:6px;
   cursor:pointer;
 }
-
-button:hover {
-  background:#4752c4;
-}
-
-.preview {
+button:hover{background:#4752c4}
+.preview{
   margin-top:15px;
   display:flex;
   background:#2b2f36;
   border-radius:6px;
   overflow:hidden;
 }
-
-.bar {
-  width:6px;
-  background:#9b59b6;
+.bar{width:6px;background:#9b59b6}
+.text{padding:12px;font-size:14px;white-space:pre-line}
+.file-list{
+  margin-top:10px;
+  font-size:13px;
 }
-
-.text {
-  padding:12px;
-  font-size:14px;
-  white-space:pre-line;
+.file-item{
+  display:flex;
+  justify-content:space-between;
+  background:#0f1117;
+  padding:6px 8px;
+  border-radius:5px;
+  margin-bottom:5px;
+}
+.remove{
+  cursor:pointer;
+  color:#ff5c5c;
 }
 </style>
 </head>
@@ -85,24 +74,26 @@ button:hover {
 <body>
 
 <div class="container">
-  <h2>📢 Annonce Discord</h2>
+<h2>📢 Annonce Discord</h2>
 
-  <input id="webhook" placeholder="Webhook Discord">
-  <input id="username" placeholder="Nom du webhook">
-  <textarea id="message" placeholder="Message de l'annonce"></textarea>
+<input id="webhook" placeholder="Webhook Discord">
+<input id="username" placeholder="Nom du webhook">
+<textarea id="message" placeholder="Message de l'annonce"></textarea>
 
-  🎨 Couleur :
-  <input type="color" id="color" value="#9b59b6">
+🎨 Couleur :
+<input type="color" id="color" value="#9b59b6">
 
-  🖼️ Image intégrée :
-  <input type="file" id="image" accept="image/*">
+📎 Fichiers / Images (multi) :
+<input type="file" id="files" multiple>
 
-  <button onclick="send()">🚀 Envoyer</button>
+<div class="file-list" id="fileList"></div>
 
-  <div class="preview">
-    <div class="bar" id="bar"></div>
-    <div class="text" id="preview">Aperçu du message</div>
-  </div>
+<button onclick="send()">🚀 Envoyer</button>
+
+<div class="preview">
+  <div class="bar" id="bar"></div>
+  <div class="text" id="preview">Aperçu du message</div>
+</div>
 </div>
 
 <script>
@@ -110,23 +101,45 @@ const msg = document.getElementById("message");
 const color = document.getElementById("color");
 const preview = document.getElementById("preview");
 const bar = document.getElementById("bar");
+const fileInput = document.getElementById("files");
+const fileListDiv = document.getElementById("fileList");
 
-msg.addEventListener("input", () => {
-  preview.textContent = msg.value || "Aperçu du message";
+let files = [];
+
+msg.addEventListener("input",()=>preview.textContent = msg.value || "Aperçu du message");
+color.addEventListener("input",()=>bar.style.background = color.value);
+
+fileInput.addEventListener("change",()=>{
+  for (let f of fileInput.files) files.push(f);
+  renderFiles();
+  fileInput.value = "";
 });
 
-color.addEventListener("input", () => {
-  bar.style.background = color.value;
-});
+function renderFiles(){
+  fileListDiv.innerHTML = "";
+  files.forEach((f,i)=>{
+    const div = document.createElement("div");
+    div.className = "file-item";
+    div.innerHTML = `
+      <span>${f.name}</span>
+      <span class="remove" onclick="removeFile(${i})">❌</span>
+    `;
+    fileListDiv.appendChild(div);
+  });
+}
 
-function send() {
+function removeFile(i){
+  files.splice(i,1);
+  renderFiles();
+}
+
+function send(){
   const webhook = document.getElementById("webhook").value;
   const username = document.getElementById("username").value || "Annonce";
   const message = msg.value;
-  const img = document.getElementById("image").files[0];
   const embedColor = parseInt(color.value.replace("#",""),16);
 
-  if (!webhook || !message) {
+  if(!webhook || !message){
     alert("Webhook et message obligatoires");
     return;
   }
@@ -138,22 +151,21 @@ function send() {
     color: embedColor
   };
 
-  if (img) {
-    embed.image = { url: "attachment://" + img.name };
-    form.append("file", img);
+  let imageIndex = files.findIndex(f => f.type.startsWith("image"));
+  if(imageIndex !== -1){
+    embed.image = { url: "attachment://" + files[imageIndex].name };
   }
+
+  files.forEach(f => form.append("file", f));
 
   form.append("payload_json", JSON.stringify({
     username: username,
     embeds: [embed]
   }));
 
-  fetch(webhook, {
-    method:"POST",
-    body: form
-  })
-  .then(() => alert("Annonce envoyée ✅"))
-  .catch(() => alert("Erreur ❌"));
+  fetch(webhook,{method:"POST",body:form})
+    .then(()=>alert("Annonce envoyée ✅"))
+    .catch(()=>alert("Erreur ❌"));
 }
 </script>
 
