@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Annonce Discord Embed</title>
+<title>Annonce Discord PRO</title>
 
 <style>
 body{
@@ -17,7 +17,7 @@ body{
 .container{
   background:#181b23;
   padding:20px;
-  width:450px;
+  width:460px;
   border-radius:10px;
 }
 h2{text-align:center;margin-bottom:15px}
@@ -43,19 +43,6 @@ button{
   cursor:pointer;
 }
 button:hover{background:#4752c4}
-.preview{
-  margin-top:15px;
-  display:flex;
-  background:#2b2f36;
-  border-radius:6px;
-  overflow:hidden;
-}
-.bar{width:6px;background:#9b59b6}
-.text{padding:12px;font-size:14px;white-space:pre-line}
-.file-list{
-  margin-top:10px;
-  font-size:13px;
-}
 .file-item{
   display:flex;
   justify-content:space-between;
@@ -63,16 +50,13 @@ button:hover{background:#4752c4}
   padding:6px 8px;
   border-radius:5px;
   margin-bottom:5px;
+  font-size:13px;
 }
-.remove{
-  cursor:pointer;
-  color:#ff5c5c;
-}
+.remove{color:#ff5c5c;cursor:pointer}
 </style>
 </head>
 
 <body>
-
 <div class="container">
 <h2>📢 Annonce Discord</h2>
 
@@ -83,40 +67,27 @@ button:hover{background:#4752c4}
 🎨 Couleur :
 <input type="color" id="color" value="#9b59b6">
 
-📎 Fichiers / Images (multi) :
+📎 Fichiers / Images :
 <input type="file" id="files" multiple>
 
-<div class="file-list" id="fileList"></div>
+<div id="fileList"></div>
 
 <button onclick="send()">🚀 Envoyer</button>
-
-<div class="preview">
-  <div class="bar" id="bar"></div>
-  <div class="text" id="preview">Aperçu du message</div>
-</div>
 </div>
 
 <script>
-const msg = document.getElementById("message");
-const color = document.getElementById("color");
-const preview = document.getElementById("preview");
-const bar = document.getElementById("bar");
-const fileInput = document.getElementById("files");
-const fileListDiv = document.getElementById("fileList");
-
 let files = [];
-
-msg.addEventListener("input",()=>preview.textContent = msg.value || "Aperçu du message");
-color.addEventListener("input",()=>bar.style.background = color.value);
+const fileInput = document.getElementById("files");
+const fileList = document.getElementById("fileList");
 
 fileInput.addEventListener("change",()=>{
-  for (let f of fileInput.files) files.push(f);
-  renderFiles();
+  for(const f of fileInput.files) files.push(f);
   fileInput.value = "";
+  renderFiles();
 });
 
 function renderFiles(){
-  fileListDiv.innerHTML = "";
+  fileList.innerHTML = "";
   files.forEach((f,i)=>{
     const div = document.createElement("div");
     div.className = "file-item";
@@ -124,7 +95,7 @@ function renderFiles(){
       <span>${f.name}</span>
       <span class="remove" onclick="removeFile(${i})">❌</span>
     `;
-    fileListDiv.appendChild(div);
+    fileList.appendChild(div);
   });
 }
 
@@ -136,8 +107,8 @@ function removeFile(i){
 function send(){
   const webhook = document.getElementById("webhook").value;
   const username = document.getElementById("username").value || "Annonce";
-  const message = msg.value;
-  const embedColor = parseInt(color.value.replace("#",""),16);
+  const message = document.getElementById("message").value;
+  const color = parseInt(document.getElementById("color").value.replace("#",""),16);
 
   if(!webhook || !message){
     alert("Webhook et message obligatoires");
@@ -145,22 +116,30 @@ function send(){
   }
 
   const form = new FormData();
+  let embeds = [];
+  let fileIndex = 1;
 
-  const embed = {
-    description: message,
-    color: embedColor
-  };
+  files.forEach(f=>{
+    form.append("file"+fileIndex, f);
 
-  let imageIndex = files.findIndex(f => f.type.startsWith("image"));
-  if(imageIndex !== -1){
-    embed.image = { url: "attachment://" + files[imageIndex].name };
+    if(f.type.startsWith("image")){
+      embeds.push({
+        description: embeds.length === 0 ? message : null,
+        color: color,
+        image: { url: "attachment://" + f.name }
+      });
+    }
+
+    fileIndex++;
+  });
+
+  if(embeds.length === 0){
+    embeds.push({ description: message, color: color });
   }
-
-  files.forEach(f => form.append("file", f));
 
   form.append("payload_json", JSON.stringify({
     username: username,
-    embeds: [embed]
+    embeds: embeds
   }));
 
   fetch(webhook,{method:"POST",body:form})
@@ -168,6 +147,5 @@ function send(){
     .catch(()=>alert("Erreur ❌"));
 }
 </script>
-
 </body>
 </html>
